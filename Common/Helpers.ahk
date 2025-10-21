@@ -18,7 +18,7 @@ ClipSend(str, restore := true) {
 	A_Clipboard := str
 	SendInput("^v")
 	if restore {
-		SetTimer(() => A_Clipboard := prevClip, -100)
+		SetTimer(() => A_Clipboard := prevClip, -200)
 	}
 }
 
@@ -124,6 +124,17 @@ Bin2Dec(input) {
 	}
 	
 	return res
+}
+
+BitsToString(bits, bitsCount) {
+	str := ""
+	i := bitsCount
+	
+	while --i >= 0 {
+		str .= (bits >> i & 0x1) ? "1" : "0"
+	}
+	
+	return str
 }
 
 SetLangEn() {
@@ -272,6 +283,7 @@ ToggleTaskbar() {
 	DllCall("shell32\SHAppBarMessage", "UInt", ABM_SETSTATE, "Ptr", abd)
 }
 
+SuspendPC() => DllCall("PowrProf\SetSuspendState", "Int", 0, "Int", 0, "Int", 0)
 
 ; --- Input Helpers ---
 	

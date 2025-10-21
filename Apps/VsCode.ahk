@@ -144,6 +144,12 @@ class VsCode {
 		SendInput("+^4")
 	}
 	
+	static ToSpaces() {
+		; modified
+		; default: None
+		SendInput("+^7")
+	}
+	
 	static ScrollTerminalUpByLine() => SendInput("!^{PgUp}")
 	
 	static ScrollTerminalDownByLine() => SendInput("!^{PgDn}")

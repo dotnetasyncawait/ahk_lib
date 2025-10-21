@@ -71,7 +71,7 @@ class Rider {
 		; replaced instead: CloneCaretAbove
 		; name: 
 		; default: none
-		SendInput("!^{Up}")
+		SendEvent("!^{Up}")
 	}
 	
 	static CloneCaretBelowWithVirtualSpace() {
@@ -79,7 +79,7 @@ class Rider {
 		; replaced instead: CloneCaretBelow
 		; name: 
 		; default: none
-		SendInput("!^{Down}")
+		SendEvent("!^{Down}")
 	}
 	
 	static DuplicateLineOrSelection() => SendInput("^d")
