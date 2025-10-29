@@ -30,8 +30,8 @@ class VsCode {
 					this._Run(path)
 				}
 			default:
-				if not Paths.TryGetFolderPath(value, &path) {
-					output := Format("Folder «{}» not found.", value)
+				if not Paths.TryGetAliased(value, &path, &_) {
+					output := Format("File/folder '{}' not found.", value)
 				} else {
 					this._Run(path)
 				}

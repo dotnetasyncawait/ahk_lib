@@ -23,8 +23,10 @@ class QmkMSys {
 					Run(this._fullProcessNameWithArgs, path)
 				}
 			default:
-				if not Paths.TryGetFolderPath(value, &path) {
-					output := Format("Folder «{}» not found.", value)
+				if not Paths.TryGetAliased(value, &path, &isFile) {
+					output := Format("Folder '{}' not found.", value)
+				} else if isFile {
+					output := "Files are not supported."
 				} else {
 					Run(this._fullProcessNameWithArgs, path)
 				}

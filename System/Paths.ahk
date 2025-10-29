@@ -53,24 +53,40 @@ class Paths {
 			"ahk/lib",     this.AhkLib,
 			"me",          this.User,
 			"code/usr",    this.VsCodeUser,
-			"test.ahk",    this.Desktop "\test.ahk"
+			
+			"test.ahk",    this._FilePath(this.Desktop "\test.ahk")
 		)
 		
 		this._paths.Default := ""
 	}
 	
 	/**
-	 * Tries to look up for the path by the specified `folderName`
-	 * @param {String} folderName
-	 * Folder's name (actually an alias, not the real name)
+	 * Attempts to find a path by its alias.
+	 * @param {String} alias
+	 * File/folder's alias
 	 * @param {&String} path
-	 * Path to the folder is assigned on `return` (if found)
+	 * Path to a file/folder is assigned on `return` (if found)
+	 * @param {&Boolean} isFile
+	 * Indicates whether the path is a file or a folder (if found)
 	 * @returns {Boolean}
 	 * `True` if path is found; `False` otherwise
 	 */
-	static TryGetFolderPath(folderName, &path) {
-		path := this._paths[folderName]
-		return path != ""
+	static TryGetAliased(alias, &path, &isFile) {
+		path := isFile := ""
+		
+		if not value := this._paths[alias] {
+			return false
+		}
+		
+		if value is Paths._FilePath {
+			path := value.Path
+			isFile := true
+		} else {
+			path := value
+			isFile := false
+		}
+		
+		return true
 	}
 	
 	
@@ -145,5 +161,9 @@ class Paths {
 		
 		A_Clipboard := prevClip
 		return paths
+	}
+	
+	class _FilePath {
+		__New(path) => this.Path := path
 	}
 }
