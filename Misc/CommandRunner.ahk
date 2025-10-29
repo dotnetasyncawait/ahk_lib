@@ -396,18 +396,8 @@ class CommandRunner {
 	 * @param {CommandRunner.ArgsIter} args
 	 */
 	static _HandleCommand(args, _, &output) {
-		if not args.Next(&arg) {
+		if not args.Next(&arg) || arg.Value == "-h" {
 			output := GetUsage()
-			return
-		}
-		
-		if arg.IsOption {
-			switch option := arg.Value {
-				case "-h", "--help":
-					output := GetUsage()
-				default:
-					output := Format("Unknown option '{}'.", option)
-			}
 			return
 		}
 		
@@ -417,7 +407,7 @@ class CommandRunner {
 				output := "History cleared."
 			
 			default:
-				output := Format("Unknown command '{}'.", command)
+				output := Format("Unknown command '{}'. {}", command, GetUsage())
 		}
 		
 		
@@ -426,7 +416,7 @@ class CommandRunner {
 			Usage: this [OPTIONS] COMMAND
 			
 			Options:
-			--help, -h:  Get usage
+			-h:  Get usage
 			
 			Commands:
 			ch:  Clear history

@@ -22,22 +22,6 @@ ClipSend(str, restore := true) {
 	}
 }
 
-StrIsEmptyOrWhiteSpace(str) {
-	len := StrLen(str)
-	
-	if !len {
-		return true
-	}
-	
-	Loop len {
-		if SubStr(str, A_Index, 1) != A_Space {
-			return false
-		}
-	}
-	
-	return true
-}
-
 ThrowIfError(err) {
 	if err {
 		throw err
@@ -90,48 +74,55 @@ NewGuidStr(upperCase := false) {
 	return upperCase ? guidStr : StrLower(guidStr)
 }
 
-Bin2Hex(input, paddingCount := 0, lowerCase := false) {
-	res := Bin2Dec(input)
-	if res == -1 {
-		return ""
+/**
+ * Returns the most significant on-bit index of a 64-bit integer.
+ * @param {Integer} bits 
+ * @returns {Integer} 
+ */
+BitOn64(bits) {
+	n := 0
+	if bits >> 32 {
+		bits >>= 32
+		n += 32
 	}
-	
-	pattern := paddingCount
-		? ("0x{:0" paddingCount (lowerCase ? "x}" : "X}"))
-		: (lowerCase ? "0x{:x}" : "0x{:X}")
-		
-	return Format(pattern, res)
+	if bits >> 16 {
+		bits >>= 16
+		n += 16
+	}
+	if bits >> 8 {
+		bits >>= 8
+		n += 8
+	}
+	if bits >> 4 {
+		bits >>= 4
+		n += 4
+	}
+	if bits >> 2 {
+		bits >>= 2
+		n += 2
+	}
+	if bits >> 1 {
+		bits >>= 1
+		n += 1
+	}
+	return n
 }
 
-Bin2Dec(input) {
-	len := StrLen(input)
-	if !len {
-		return -1
-	}
-	
-	res := 0
-	j := 0
-	
-	i := len+1
-	while --i > 0 {
-		switch SubStr(input, i, 1) {
-			case "0": ; break
-			case "1": res += 1 << j
-			case "_": continue
-			default:  return -1
-		}
-		j++
-	}
-	
-	return res
-}
-
-BitsToString(bits, bitsCount) {
+IntegerToBinary(bits) {
+	bitsCount := BitOn64(bits) + 1
 	str := ""
-	i := bitsCount
 	
-	while --i >= 0 {
-		str .= (bits >> i & 0x1) ? "1" : "0"
+	padd := (8 - bitsCount) & 0x7
+	loop padd {
+		str .= "0"
+	}
+	
+	while --bitsCount >= 0 {
+		str .= (bits >> bitsCount & 1) ? "1" : "0"
+		
+		if Mod(A_Index + padd, 8) == 0 && bitsCount != 0 {
+			str .= "_"
+		} 
 	}
 	
 	return str

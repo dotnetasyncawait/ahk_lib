@@ -103,28 +103,19 @@ class Mode {
 	
 	; --- private ---
 	
-	/** @param {CommandRunner.ArgsIter} args */
+	/** 
+	 * @param {CommandRunner.ArgsIter} args
+	 */
 	static _HandleCommand(args, _, &output) {
-		if not args.Next(&arg) {
+		if not args.Next(&arg) || arg.Value == "-h" {
 			output := GetUsage()
 			return
 		}
 		
-		if arg.IsOption {
-			switch option := arg.Value {
-				case "-h", "--help":
-					output := GetUsage()
-				default:
-					output := Format("Unknown option '{}'.", option)
-			}
-			return
-		}
-		
 		switch command := arg.Value {
-			case "tg":
-				this.ToggleDisplay()
+			case "tg": this.ToggleDisplay()
 			default:
-				output := Format("Unknown command '{}'.", command)
+				output := Format("Unknown command '{}'. {}", command, GetUsage())
 		}
 		
 		
@@ -133,7 +124,7 @@ class Mode {
 			Usage: mode [OPTIONS] COMMAND
 			
 			Options:
-			-h, --help:  Print usage
+			-h:  Print usage
 			
 			Commands:
 			tg:  Toggle window's visibility
