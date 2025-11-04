@@ -40,13 +40,11 @@ class CommandRunner {
 		this._InitCommands()
 		this._InitConsole()
 		
-		WM_ACTIVATE               := 0x0006
-		WM_INPUTLANGCHANGEREQUEST := 0x0050
-		WM_KEYDOWN                := 0x0100
-		
-		OnMessage(WM_KEYDOWN, this._OnKEYDOWN.Bind(this))
-		OnMessage(WM_ACTIVATE, this._OnACTIVATE.Bind(this))
-		OnMessage(WM_INPUTLANGCHANGEREQUEST, this._OnINPUTLANGCHANGEREQUEST.Bind(this))
+		OnMessage(0x0006, this._OnACTIVATE.Bind(this))               ; WM_ACTIVATE
+		OnMessage(0x0050, this._OnINPUTLANGCHANGEREQUEST.Bind(this)) ; WM_INPUTLANGCHANGEREQUEST
+		OnMessage(0x0100, this._OnKEYDOWN.Bind(this))                ; WM_KEYDOWN
+		OnMessage(0x0104, this._OnSYSKEYDOWN.Bind(this))             ; WM_SYSKEYDOWN
+		OnMessage(0x020A, this._OnMOUSEWHEEL.Bind(this))             ; WM_MOUSEWHEEL
 	}
 	
 	
@@ -132,10 +130,35 @@ class CommandRunner {
 			}
 			this._Execute()
 		case VK_BACK:
-			if !IsEdit || !GetKeyState("LCtrl", "P") {
+			if not isEdit || not GetKeyState("LCtrl", "P") {
 				return
-			} 
-			SendInput("{Blind}+{Left}{Del}")
+			}
+			
+			if not value := this._consoleEdit.Value {
+				return 0
+			}
+			
+			EM_GETSEL := 0x00B0, EM_SETSEL := 0x00B1, EM_REPLACESEL := 0x00C2
+			
+			DllCall("SendMessageW", "Ptr", hwnd, "UInt", EM_GETSEL, "Int*", &selStart:=0, "Int*", &selEnd:=0)
+			
+			if selStart != selEnd { ; we have a selected area, so we will simply delete it and return
+				SendMessage(EM_REPLACESEL, true, "", hwnd)
+				return 0
+			}
+			
+			if (caretPos := selStart) == 0 { ; caret is at the beginning
+				return 0
+			}
+			
+			if SubStr(value, caretPos, 1) != A_Space {
+				caretDest := FindWhitespace(value, caretPos)
+			} else {
+				caretDest := FindWhitespace(value, FindNonWhitespace(value, caretPos))
+			}
+			
+			SendMessage(EM_SETSEL, caretPos, caretDest, hwnd)
+			SendMessage(EM_REPLACESEL, true, "", hwnd)
 		case VK_UP:
 			if !isEdit {
 				return
@@ -149,6 +172,61 @@ class CommandRunner {
 		default: return
 		}
 		
+		return 0
+		
+		static FindNonWhitespace(value, currentPos) {
+			loop {
+				currentPos--
+			} until currentPos < 1 || SubStr(value, currentPos, 1) != A_Space
+			
+			return currentPos
+		}
+		
+		static FindWhitespace(value, currentPos) => InStr(value, A_Space, , currentPos-StrLen(value)-1)
+	}
+	
+	static _OnSYSKEYDOWN(wParam, lParam, _, hwnd) {
+		if (lParam & 0x20000000) == 0 { ; not an Alt event
+			return
+		}
+		
+		if not this._outputEdit.Visible
+			|| hwnd != this._consoleEdit.Hwnd && hwnd != this._outputEdit.Hwnd {
+			return
+		}
+		
+		VK_UP   := 0x26
+		VK_DOWN := 0x28
+		
+		scrollStep := 2
+		
+		switch wParam {
+		case VK_UP:   count := -scrollStep
+		case VK_DOWN: count := scrollStep
+		default: return
+		}
+		
+		this._LineScroll(count, this._outputEdit.Hwnd)
+		return 0
+	}
+	
+	static _OnMOUSEWHEEL(wParam, lParam, _, hwnd) {
+		if hwnd != this._outputEdit.Hwnd || not this._outputEdit.Visible {
+			return
+		}
+		
+		if (hi := wParam >> 16) & 0x8000 {
+			hi -= 0x10000
+		}
+		
+		scrollStep := 2
+		
+		count := hi < 0 ? scrollStep : -scrollStep
+		if wParam & 0x0004 { ; shifted
+			count *= 5
+		}
+		
+		this._LineScroll(count, hwnd)
 		return 0
 	}
 	
@@ -377,8 +455,11 @@ class CommandRunner {
 	static _ShowOutput(output) {
 		this._outputEdit.Visible := true
 		this._outputEdit.Value := output
+		this._LineScroll(0x7FFFFFFF, this._outputEdit.Hwnd)
 		ControlShow(this._outputEdit.Hwnd)
 	}
+	
+	static _LineScroll(count, hwnd) => SendMessage(0xB6, 0, count, hwnd) ; EM_LINESCROLL
 	
 	static _HideOutput() {
 		this._outputEdit.Value := ""
@@ -589,8 +670,8 @@ class CommandRunner {
 		 * @param {Gui.Edit} edit
 		 */
 		static Display(edit, value) {
-			edit.Value := value	
-			PostMessage(0x00B1, len := StrLen(value), len, edit.Hwnd) ; EM_SETSEL
+			edit.Value := value
+			PostMessage(0x1511, StrLen(value), 0, edit.Hwnd) ; EM_SETCARETINDEX
 		}
 	}
 }

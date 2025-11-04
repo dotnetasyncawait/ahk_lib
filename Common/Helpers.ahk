@@ -10,7 +10,7 @@ ScrollDown() {
 
 MoveMouseToCenter() {
 	WinGetPos(&x, &y, &width, &height, "A")
-	MouseMove(x + width/2, y + height/2)
+	DllCall("SetCursorPos", "Int", x + width // 2, "Int", y + height // 2)
 }
 
 ClipSend(str, restore := true) {

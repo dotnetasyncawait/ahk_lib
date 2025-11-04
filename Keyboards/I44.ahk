@@ -24,13 +24,13 @@ class I44 {
 		this._deviceInfo := deviceInfo
 	}
 	
-	static _NORMAL := 0
-	static _INSERT := 1
-	static _SELECT := 2
-	static _SYMBOL := 3
-	static _U_SYMB := 4
-	static _MOUSE  := 5
-	static _SYSTEM := 6
+	static _NORMAL := 1 << 0
+	static _INSERT := 1 << 1
+	static _SELECT := 1 << 2
+	static _SYMBOL := 1 << 3
+	static _U_SYMB := 1 << 4
+	static _MOUSE  := 1 << 5
+	static _SYSTEM := 1 << 6
 	
 	static NewDevice() => HidDevice(this._deviceInfo)
 	
@@ -38,7 +38,7 @@ class I44 {
 	
 	static DisableAhk(&err) => this.NewDevice().Write([HID_AHK, 0], &err)
 	
-	static SetMouseLayer(&err) => this.SetLayer(1 << this._MOUSE, &err)
+	static SetMouseLayer(&err) => this.SetLayer(this._MOUSE, &err)
 	
 	static SetLayer(layerMask, &err) => this.NewDevice().Write([HID_SET_LAYER, layerMask >> 8, layerMask], &err)
 	
