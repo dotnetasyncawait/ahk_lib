@@ -54,31 +54,6 @@ class CommandRunner {
 		this._console.Show()
 	}
 	
-	static Move(
-		x := this._xPos,
-		y := this._yPos, 
-		width := this._width, 
-		height := this._height,
-		xDisposition := this._xDisposition,
-		yDisposition := this._yDisposition) 
-	{
-		this._console.Move(
-			x + Disposition.GetShift(xDisposition, width),
-			y + Disposition.GetShift(yDisposition, height),
-			width,
-			height + this._outputEditHeight + this._outputEditPaddY)
-
-		this._consoleEdit.Move(, , width, height)
-		this._outputEdit.Move(, height + this._outputEditPaddY, width)
-		
-		this._xPos := x
-		this._yPos := y
-		this._width := width
-		this._height := height
-		this._xDisposition := xDisposition
-		this._yDisposition := yDisposition
-	}
-	
 	; TODO: add docs
 	static AddCommands(command, callback, params*) {
 		if Mod(params.Length, 2) != 0 {
@@ -526,8 +501,8 @@ class CommandRunner {
 		this._console.Show("Hide")
 		
 		this._console.Move(
-			this._xPos + Disposition.GetShift(this._xDisposition, this._width),
-			this._yPos + Disposition.GetShift(this._yDisposition, this._height)
+			this._xPos + Disposition.GetOffset(this._xDisposition, this._width),
+			this._yPos + Disposition.GetOffset(this._yDisposition, this._height)
 		)
 	}
 	

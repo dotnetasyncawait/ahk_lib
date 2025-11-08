@@ -4,7 +4,7 @@ class Disposition {
 	static Inverted => 2
 	
 	; TODO: add docs
-	static GetShift(d, wh) {
+	static GetOffset(d, wh) {
 		switch d {
 		case Disposition.Inverted: 
 			return -wh

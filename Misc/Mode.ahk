@@ -24,12 +24,11 @@ class Mode {
 	static _xDisposition := Disposition.None
 	static _yDisposition := Disposition.Inverted
 	
-	static _xPos := 0
-	static _yPos := A_ScreenHeight - 50
+	static _xPos := 7
+	static _yPos := A_ScreenHeight - 10
 	
 	static _width  := 90
 	static _height := 27
-	
 	
 	static IsNormal  => this._current == ModeType.Normal
 	static IsInsert  => this._current == ModeType.Insert
@@ -44,24 +43,16 @@ class Mode {
 		CommandRunner.AddCommands("mode", this._HandleCommand.Bind(this))
 	}
 	
-	
 	static Show() {
-		this._enabled := true
-		this._display.Show("NoActivate")
+		static _ := this._display.Show("NoActivate")
+		this._displayText.Visible := true
 	}
 	
 	static Hide() {
-		this._enabled := false
-		this._display.Hide()
+		this._displayText.Visible := false
 	}
 	
-	static ToggleDisplay() {
-		if this._enabled {
-			this.Hide()
-		} else {
-			this.Show()
-		}
-	}
+	static ToggleDisplay() => this._displayText.Visible ^= 1
 	
 	static Move(
 		x := this._xPos,
@@ -72,8 +63,8 @@ class Mode {
 		yDisposition := this._yDisposition) 
 	{
 		this._display.Move(
-			x + Disposition.GetShift(xDisposition, width),
-			y + Disposition.GetShift(yDisposition, height),
+			x + Disposition.GetOffset(xDisposition, width),
+			y + Disposition.GetOffset(yDisposition, height),
 			width,
 			height)
 
@@ -113,11 +104,11 @@ class Mode {
 		}
 		
 		switch command := arg.Value {
-			case "tg": this.ToggleDisplay()
-			default:
-				output := Format("Unknown command '{}'. {}", command, GetUsage())
+			case "tg": output := Format("Mode is toggled {}.", this.ToggleDisplay() ? "on" : "off")
+			default:   output := Format("Unknown command '{}'. {}", command, GetUsage())
 		}
 		
+		return
 		
 		GetUsage() => "
 		(
@@ -135,20 +126,17 @@ class Mode {
 		this._display.Opt("AlwaysOnTop -Caption ToolWindow")
 		this._display.MarginX := this._display.MarginY := 0
 		
-		this._display.BackColor := "000000" ; any color (since we're gonna make it transparent)
-		WinSetTransColor(this._display.BackColor " 240", this._display.Hwnd)
-		this._display.SetFont("s16 c0x5c5c5c", "JetBrains Mono Regular")
+		this._display.BackColor := "000000"
+		WinSetTransColor(this._display.BackColor, this._display.Hwnd)
+		this._display.SetFont("s16 c0x7e7e7e", "JetBrains Mono Regular")
 		
-		textOpts := Format("Background171717 w{1} h{2} Center", this._width, this._height)
+		textOpts := Format("w{1} h{2}", this._width, this._height)
 		this._displayText := this._display.AddText(textOpts)
 		
-		this._display.Show("Hide")
+		x := this._xPos + Disposition.GetOffset(this._xDisposition, this._width)
+		y := this._yPos + Disposition.GetOffset(this._yDisposition, this._height)
 		
-		this._display.Move(
-			this._xPos + Disposition.GetShift(this._xDisposition, this._width),
-			this._yPos + Disposition.GetShift(this._yDisposition, this._height)
-		)
-		
+		this._display.Show(Format("Hide x{} y{}", x, y))
 		this.SetDefault()
 	}
 	
@@ -196,5 +184,4 @@ class Mode {
 	static _DisplayMode(mode) {
 		this._displayText.Value := mode
 	}
-	
 }
