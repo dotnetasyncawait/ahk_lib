@@ -8,6 +8,7 @@ class Paths {
 	static ScriptDir := A_ScriptDir
 	
 	static ProgramFiles := A_ProgramFiles
+	static Documents    := A_MyDocuments
 	
 	static Projects        := "D:\Projects"
 	static ProjectsCSharp  := this.Projects "\CSharp"
@@ -53,6 +54,7 @@ class Paths {
 			"ahk/lib",     this.AhkLib,
 			"me",          this.User,
 			"code/usr",    this.VsCodeUser,
+			"docs",        this.Documents,
 			
 			"test.ahk",    this._FilePath(this.Desktop "\test.ahk")
 		)
@@ -78,12 +80,10 @@ class Paths {
 			return false
 		}
 		
-		if value is Paths._FilePath {
+		if isFile := (value is Paths._FilePath) {
 			path := value.Path
-			isFile := true
 		} else {
 			path := value
-			isFile := false
 		}
 		
 		return true

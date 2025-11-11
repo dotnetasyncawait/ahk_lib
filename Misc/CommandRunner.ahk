@@ -7,9 +7,14 @@ class CommandRunner {
 	static _commands := Map()
 	
 	/**
-	 * @type {Gui.Control}
+	 * @type {Gui.Edit}
 	 */
 	static _consoleEdit := unset
+	
+	/**
+	 * @type {CommandRunner.Output}
+	 */
+	static _output := unset
 	
 	static _xPos := A_ScreenWidth / 2
 	static _yPos := A_ScreenHeight / 100 * 20
@@ -20,10 +25,6 @@ class CommandRunner {
 	static _width  := 900
 	static _height := 35
 	
-	/**
-	 * @type {Gui.Control}
-	 */
-	static _outputEdit       := unset
 	static _outputRowCount   := 20
 	static _outputEditPaddY  := 15
 	
@@ -47,7 +48,7 @@ class CommandRunner {
 		hwnd := WinExist("A") 
 		
 		if hwnd == this._console.Hwnd { ; if the console is already open — toggle output
-			this._outputEdit.Visible ^= 1
+			this._output._Toggle()
 			return
 		}
 		
@@ -84,9 +85,11 @@ class CommandRunner {
 	; --- private ---
 
 	static _OnKEYDOWN(wParam, lParam, msg, hwnd) {
+		; This message is sent directly to the edit with the keyboard focus.
+		
 		isEdit := hwnd == this._consoleEdit.Hwnd
 		
-		if !isEdit && hwnd != this._outputEdit.Hwnd {
+		if not isEdit && hwnd != this._output.Hwnd {
 			return
 		}
 		
@@ -165,8 +168,8 @@ class CommandRunner {
 			return
 		}
 		
-		if not this._outputEdit.Visible
-			|| hwnd != this._consoleEdit.Hwnd && hwnd != this._outputEdit.Hwnd {
+		if not this._output.Visible
+			|| hwnd != this._consoleEdit.Hwnd && hwnd != this._output.Hwnd {
 			return
 		}
 		
@@ -181,12 +184,12 @@ class CommandRunner {
 		default: return
 		}
 		
-		this._LineScroll(count, this._outputEdit.Hwnd)
+		this._output._LineScroll(count)
 		return 0
 	}
 	
 	static _OnMOUSEWHEEL(wParam, lParam, _, hwnd) {
-		if hwnd != this._outputEdit.Hwnd || not this._outputEdit.Visible {
+		if hwnd != this._output.Hwnd || not this._output.Visible {
 			return
 		}
 		
@@ -201,7 +204,7 @@ class CommandRunner {
 			count *= 5
 		}
 		
-		this._LineScroll(count, hwnd)
+		this._output._LineScroll(count)
 		return 0
 	}
 	
@@ -229,7 +232,7 @@ class CommandRunner {
 	
 	static _Escape() {
 		this._ClearConsole()
-		this._HideOutput()
+		this._output._Hide()
 		this._console.Hide()
 		
 		if this._prevWinHwnd {
@@ -253,35 +256,25 @@ class CommandRunner {
 		this.History.Add(input)
 		SplitInput(input, &command, &rawArgs)
 		 
-		this._SetOutputCaretIndex(0)
-		this._WriteOutput(Format("> {}`n", input))
-		
-		; TODO: let's just hardcode it for now :)
-		static separator := "--------------------------------------------------------------------------------`n"
+		this._output._WriteCommand(input)
 		
 		if not func := this._commands.Get(command) {
-			this._WriteOutput(Format("Error: command '{}' not found.`n{}", command, separator))
+			this._output.WriteError(Format("command '{}' not found.", command))
 			return
 		}
 		
 		if not args := ParseArgs(rawArgs, &errorMessage) {
-			this._WriteOutput(Format("Error: {}`n{}", errorMessage, separator))
+			this._output.WriteError(errorMessage)
 			return
 		}
 		
 		this._isRunning := true
 		try {
-			; TODO: pass the Output edit to handlers (a wrapper with limited functionality), letting them output
-			; any text and any times during their execution.
-			; Since it would expect the running handlers to take as long as they need, hide the caret and make
-			; the Console edit 'ReadOnly' during their execution. (EM_SETREADONLY, Show/HideCaret)
-			func.Call(args, this._prevWinHwnd, &output)
+			; TODO: since we don't know how long the function will take, hide the caret and make the
+			; Console edit 'ReadOnly' (EM_SETREADONLY, Show/HideCaret).
+			func.Call(args, this._prevWinHwnd, this._output)
 		} finally {
 			this._isRunning := false
-		}
-		
-		if IsSet(output) {
-			this._WriteOutput(output "`n" separator)
 		}
 		
 		return
@@ -425,35 +418,6 @@ class CommandRunner {
 		; DllCall("ShowCaret", "Ptr", this._consoleEdit.Hwnd)
 	}
 	
-	static _HideOutput() {
-		this._outputEdit.Visible := false
-	}
-	
-	static _WriteOutput(output, silentMode := true) {
-		this._SetTextAtCaretPosition(StrReplace(output, "`n", "`r`n"), this._outputEdit.Hwnd)
-		 
-		; We could reset the caret to index 0 to scroll the output up,
-		; but if the output is hidden or need to be kept hidden — it wont scroll.
-		this._LineScroll(-10000000, this._outputEdit.Hwnd)
-		
-		; TODO: once implement passing Output object (with .Write() and .WriteError() methods) to the callers, 
-		; make the output edit appear only for the errors.
-		; Also, let the callers decide whether to show the output edit for non-error messages
-		; (eg: output.Write("message", silentMode: true)).
-		if not silentMode {
-			this._outputEdit.Visible := true
-		}
-	}
-	
-	static _LineScroll(count, hwnd) => SendMessage(0xB6, 0, count, hwnd) ; EM_LINESCROLL
-	
-	static _SetOutputCaretIndex(index) => this._SetCaretIndex(index, this._outputEdit.Hwnd)
-	
-	static _SetCaretIndex(index, hwnd) => SendMessage(0x1511, index, 0, hwnd) ; EM_SETCARETINDEX
-	
-	static _SetTextAtCaretPosition(text, hwnd, canUndo := false) =>
-		DllCall("SendMessageW", "Ptr", hwnd, "UInt", 0xC2, "Int", canUndo, "Str", text) ; EM_REPLACESEL
-	
 	static _InitCommands() {
 		this._commands.CaseSense := false
 		this._commands.Set("this", this._HandleCommand.Bind(this))
@@ -462,23 +426,26 @@ class CommandRunner {
 	
 	/**
 	 * @param {CommandRunner.ArgsIter} args
+	 * @param {CommandRunner.Output} output
 	 */
-	static _HandleCommand(args, _, &output) {
+	static _HandleCommand(args, _, output) {
 		if not args.Next(&arg) || arg.Value == "-h" {
-			output := GetUsage()
+			output.Write(GetUsage())
 			return
 		}
 		
 		switch command := arg.Value {
-			case "ch":
-				this.History.ClearHistory()
-				output := "History cleared."
-			
-			case "co":
-				this._outputEdit.Value := ""
-				
-			default:
-				output := Format("Unknown command '{}'. {}", command, GetUsage())
+		case "ch":
+			this.History.ClearHistory()
+			output.WriteSilent("Command history is cleared.")
+		
+		case "ca": 
+			this.History.ClearHistory()
+			output._Clear()
+		
+		case "clear": output._Clear()
+		
+		default: output.WriteUnknownCommand(command, GetUsage())
 		}
 		
 		return
@@ -488,11 +455,12 @@ class CommandRunner {
 			Usage: this [OPTIONS] COMMAND
 			
 			Options:
-			-h:  Get usage
+			 -h:  Get usage
 			
 			Commands:
-			ch:  Clear history
-			co:  Clear output
+			 ch:     Clear command history
+			 clear:  Clear output
+			 ca:     Clear command history and output
 		)"
 	}
 	
@@ -516,12 +484,75 @@ class CommandRunner {
 			"Background171717 -E0x200 y+{} wP R{} -VScroll ReadOnly Hidden Border",
 			this._outputEditPaddY, this._outputRowCount)
 		
-		this._outputEdit := console.AddEdit(editOpts)
+		this._output := CommandRunner.Output(console.AddEdit(editOpts))
 		
 		x := this._xPos + Disposition.GetOffset(this._xDisposition, this._width)
 		y := this._yPos + Disposition.GetOffset(this._yDisposition, this._height)
 		
 		console.Show(Format("Hide x{} y{}", x, y))
+	}
+	
+	class Output {
+		/**
+		 * @type {Gui.Edit}
+		 */
+		_edit := unset
+		
+		Hwnd => this._edit.Hwnd
+		Visible => this._edit.Visible
+		
+		__New(edit) => this._edit := edit
+		
+		Write(output) => this._WriteOutput(output)
+		
+		WriteSilent(output) => this._WriteOutput(output, true)
+		
+		WriteError(output) => this._WriteError("Error: " output)
+		
+		WriteUnknownCommand(command, usage) =>
+			this._WriteError(Format("Error: unknown command '{}'. {}", command, usage))
+		
+		SetCaretIndex(index) => SendMessage(0x1511, index, 0, this.Hwnd) ; EM_SETCARETINDEX
+		
+		; --- private/internal ---
+		
+		_Clear() => this._edit.Value := ""
+		
+		_WriteError(output) {
+			; TODO: once implement Rich Edit, customize the error messages (color, etc)
+			this._WriteOutput(output) 
+		}
+		
+		_WriteCommand(command) {
+			this.SetCaretIndex(0)
+			
+			; TODO: once implement Rich Edit, customize the color
+			this._WriteOutput("-> " command, true) 
+		}
+		
+		_WriteOutput(output, silentMode := false) {
+			DllCall("SendMessageW",
+				"Ptr",  this.Hwnd,
+				"UInt", 0xC2, ; EM_REPLACESEL
+				"Int",  false,
+				"Str",  StrReplace(output, "`n", "`r`n") "`r`n") ; append CRLF
+			
+			; We could reset the caret to index 0 to scroll the output up,
+			; but if the output is hidden or need to be kept hidden — it wont scroll.
+			this._LineScroll(-10000000)
+			
+			if not silentMode {
+				this._edit.Visible := true
+			}
+		}
+		
+		_LineScroll(count) => SendMessage(0xB6, 0, count, this.Hwnd) ; EM_LINESCROLL
+		
+		_Show() => this._edit.Visible := true
+		
+		_Hide() => this._edit.Visible := false
+		
+		_Toggle() => this._edit.Visible ^= 1
 	}
 	
 	class ArgsIter {

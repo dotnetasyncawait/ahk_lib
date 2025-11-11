@@ -12,30 +12,7 @@ class VsCode {
 	static IsActive => WinActive(this._winProcessName)
 	
 	static __New() {
-		CommandRunner.AddCommands("code", this.Open.Bind(this))
-	}
-	
-	
-	static Open(args, hwnd, &output) {
-		if not args.Next(&arg) {
-			Run(this._fullProcessName)
-			return
-		}
-		
-		switch value := arg.Value {
-			case ".":
-				if not Paths.TryGet(&path, hwnd) {
-					output := "Path not found."
-				} else {
-					this._Run(path)
-				}
-			default:
-				if not Paths.TryGetAliased(value, &path, &_) {
-					output := Format("File/folder '{}' not found.", value)
-				} else {
-					this._Run(path)
-				}
-		}
+		CommandRunner.AddCommands("code", this._HandleCommand.Bind(this))
 	}
 	
 	static OpenSelected(&err) {
@@ -46,11 +23,40 @@ class VsCode {
 		
 		maxPaths := 3
 		loop Min(maxPaths, selectedPaths.Length) {
-			Run(Format('"{1}" {2}', this._fullProcessName, selectedPaths[A_Index]))
+			; Don't use quotes (selected path is already quoted).
+			Run(Format('"{}" {}', this._fullProcessName, selectedPaths[A_Index]))
 		}
 	}
 	
-	static _Run(path) => Run(Format('"{}" "{}"', this._fullProcessName, path))
+	static Open(path) => Run(Format('"{}" "{}"', this._fullProcessName, path))
+	
+	/**
+	 * @param {CommandRunner.ArgsIter} args 
+	 * @param {CommandRunner.Output} output
+	 */
+	static _HandleCommand(args, hwnd, output) {
+		if not args.Next(&arg) {
+			Run(this._fullProcessName)
+			return
+		}
+		
+		switch value := arg.Value {
+		case ".":
+			if not Paths.TryGet(&path, hwnd) {
+				output.WriteError("path not found.")
+			} else {
+				this.Open(path)
+				output.WriteSilent(Format('Opening folder "{}".', path))
+			}
+		default:
+			if not Paths.TryGetAliased(value, &path, &isFile) {
+				output.WriteError(Format("alias '{}' not found.", value))
+			} else {
+				this.Open(path)
+				output.WriteSilent(Format('Opening {} "{}".', isFile ? "file" : "folder", path))
+			}
+		}
+	}
 	
 	
 	; --- Shortcuts ---

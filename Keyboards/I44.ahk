@@ -16,12 +16,10 @@ class I44 {
 	static _deviceInfo := unset
 	
 	static __New() {
-		deviceInfo := HidDevices.Find(this._vendorID, this._productID, this._usagePage, this._usageID, &err)
+		this._deviceInfo := HidDevices.Find(this._vendorID, this._productID, this._usagePage, this._usageID, &err)
 		if err {
 			throw err
 		}
-		
-		this._deviceInfo := deviceInfo
 	}
 	
 	static _NORMAL := 1 << 0

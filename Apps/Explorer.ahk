@@ -10,25 +10,31 @@ class Explorer {
 	static IsActive => WinActive(this._winProcessName)
 	
 	static __New() {
-		CommandRunner.AddCommands("exp", this._Handle.Bind(this))
+		CommandRunner.AddCommands("exp", this._HandleCommand.Bind(this))
 	}
 	
 	static Open(path) => ComObject("Shell.Application").Explore(path)
 	
-	static _Handle(args, _, &output) {
+	/**
+	 * @param {CommandRunner.ArgsIter} args 
+	 * @param {CommandRunner.Output} output
+	 */
+	static _HandleCommand(args, _, output) {
 		if not args.Next(&arg) {
 			this.Open(Paths.Desktop)
+			output.WriteSilent(Format('Opening default location "{}".', Paths.Desktop))
 			return
 		}
 		
 		alias := arg.Value
 		
 		if not Paths.TryGetAliased(alias, &path, &isFile) {
-			output := Format("Alias '{}' not found.", alias)
+			output.WriteError(Format("alias '{}' not found.", alias))
 		} else if isFile {
-			output := "Files are not supported."
+			output.WriteError("files are not supported.")
 		} else {
 			this.Open(path)
+			output.WriteSilent(Format('Opening folder "{}".', path))
 		}
 	}
 	

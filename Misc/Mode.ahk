@@ -96,16 +96,17 @@ class Mode {
 	
 	/** 
 	 * @param {CommandRunner.ArgsIter} args
+	 * @param {CommandRunner.Output} output
 	 */
-	static _HandleCommand(args, _, &output) {
+	static _HandleCommand(args, _, output) {
 		if not args.Next(&arg) || arg.Value == "-h" {
-			output := GetUsage()
+			output.Write(GetUsage())
 			return
 		}
 		
 		switch command := arg.Value {
-			case "tg": output := Format("Mode is toggled {}.", this.ToggleDisplay() ? "on" : "off")
-			default:   output := Format("Unknown command '{}'. {}", command, GetUsage())
+			case "tg": output.WriteSilent("Mode is toggled " (this.ToggleDisplay() ? "on." : "off."))
+			default:   output.WriteUnknownCommand(command, GetUsage())
 		}
 		
 		return
@@ -115,10 +116,10 @@ class Mode {
 			Usage: mode [OPTIONS] COMMAND
 			
 			Options:
-			-h:  Print usage
+			 -h:  Print usage
 			
 			Commands:
-			tg:  Toggle window's visibility
+			 tg:  Toggle window's visibility
 		)"
 	}
 	

@@ -7,32 +7,43 @@ class WindowsTerminal {
 	static _fullProcessName := Paths.Local "\Microsoft\WindowsApps\wt.exe"
 	
 	static __New() {
-		CommandRunner.AddCommands("wt", this.Open.Bind(this))
+		CommandRunner.AddCommands("wt", this._HandleCommand.Bind(this))
 	}
 	
 	static IsActive => WinActive(this._winProcessName)
 	
-	static Open(args, hwnd, &output) {
+	/**
+	 * @param {CommandRunner.ArgsIter} args 
+	 * @param {CommandRunner.Output} output
+	 */
+	static _HandleCommand(args, hwnd, output) {
 		if not args.Next(&arg) {
 			Run(this._fullProcessName)
 			return
 		}
 		
 		switch value := arg.Value {
-			case ".":
-				if not Paths.TryGet(&path, hwnd) {
-					output := "Path not found."
-				} else {
-					this._Run(path)
-				}
-			default:
-				if not Paths.TryGetAliased(value, &path, &isFile) {
-					output := Format("Folder '{}' not found.", value)
-				} else if isFile {
-					output := "Files are not supported."
-				} else {
-					this._Run(path)
-				}
+		case ".":
+			if not Paths.TryGet(&path, hwnd) {
+				output.WriteError("path not found.")
+			} else {
+				RunAndOutput(path, output)
+			}
+		default:
+			if not Paths.TryGetAliased(value, &path, &isFile) {
+				output.WriteError(Format("alias '{}' not found.", value))
+			} else if isFile {
+				output.WriteError("files are not supported.")
+			} else {
+				RunAndOutput(path, output)
+			}
+		}
+		
+		return
+		
+		RunAndOutput(path, output) {
+			this._Run(path)
+			output.WriteSilent(Format('Opening folder "{}".', path))
 		}
 	}
 	
