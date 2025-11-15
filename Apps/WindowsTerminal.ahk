@@ -12,42 +12,62 @@ class WindowsTerminal {
 	
 	static IsActive => WinActive(this._winProcessName)
 	
+	static Open(path) => Run(Format('{} -d "{}"', this._fullProcessName, path))
+	
 	/**
 	 * @param {CommandRunner.ArgsIter} args 
 	 * @param {CommandRunner.Output} output
 	 */
 	static _HandleCommand(args, hwnd, output) {
-		if not args.Next(&arg) {
+		; Usage: wt [. | ALIAS] [-e]
+		
+		if args.IsEmpty {
 			Run(this._fullProcessName)
 			return
 		}
 		
-		switch value := arg.Value {
-		case ".":
-			if not Paths.TryGet(&path, hwnd) {
-				output.WriteError("path not found.")
-			} else {
-				RunAndOutput(path, output)
-			}
-		default:
-			if not Paths.TryGetAliased(value, &path, &isFile) {
-				output.WriteError(Format("alias '{}' not found.", value))
-			} else if isFile {
-				output.WriteError("files are not supported.")
-			} else {
-				RunAndOutput(path, output)
+		prefix := ""
+		path := ""
+		
+		while args.Next(&arg) {
+			switch value := arg.Value {
+			case "-e": ; run elevated
+				if args.Next(&arg) { ; we should have no arguments followed this flag
+					output.WriteError(Format("invalid argument '{}'.", arg.Value))
+					return
+				}
+				prefix := "*RunAs "
+				break ; break of the while loop
+			case ".":
+				if path {
+					output.WriteError("invalid argument '.'.")
+				} else if not Paths.TryGet(&path, hwnd) {
+					output.WriteError("path not found.")
+				} else {
+					continue
+				}
+				return
+			default:
+				if path {
+					output.WriteError(Format("invalid argument '{}'.", value))
+				} else if not Paths.TryGetAliased(value, &path, &isFile) {
+					output.WriteError(Format("alias '{}' not found.", value))
+				} else if isFile {
+					output.WriteError("files are not supported.")
+				} else {
+					continue
+				}
+				return
 			}
 		}
 		
-		return
-		
-		RunAndOutput(path, output) {
-			this._Run(path)
+		if path {
+			Run(Format('{} -d "{}"', prefix . this._fullProcessName, path))
 			output.WriteSilent(Format('Opening folder "{}".', path))
+		} else {
+			Run(prefix . this._fullProcessName)
 		}
 	}
-	
-	static _Run(path) => Run(Format('{} -d "{}"', this._fullProcessName, path))
 	
 	
 	; --- Shortcuts ---
