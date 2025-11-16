@@ -597,8 +597,35 @@ class CommandRunner {
 		static _maxSize := 32
 		static _tempCommand := ""
 		
+		static _historyPath := "local\command_history.txt"
+		
 		static __New() {
 			this._commandsMap.Default := ""
+			
+			RestoreCommandHistory()
+			OnExit((*) => SaveCommandHistory())
+			
+			return
+			
+			RestoreCommandHistory() {
+				f := FileOpen(this._historyPath, "r")
+				try {
+					while not f.AtEOF {
+						if command := f.ReadLine() {
+							this.Add(command)
+						}
+					}
+				} finally f.Close()
+			}
+			
+			SaveCommandHistory() {
+				f := FileOpen(this._historyPath, "w") ; open truncated
+				try {
+					for command in this._commands {
+						f.WriteLine(command)
+					}
+				} finally f.Close()
+			}
 		}
 		
 		/**
@@ -610,13 +637,13 @@ class CommandRunner {
 			}
 			
 			if this._current == "" {
-				SetLastAndDisplay(edit)
+				SetLastAndWrite(edit)
 				return
 			}
 			
 			if this.IsContentUpdated(edit) {
 				this.Reset()
-				SetLastAndDisplay(edit)
+				SetLastAndWrite(edit)
 				return
 			}
 			
@@ -624,14 +651,14 @@ class CommandRunner {
 				return
 			}
 			
-			this.Display(edit, prev.Value)
+			this.Write(edit, prev.Value)
 			this._current := prev
 			
 			
-			SetLastAndDisplay(edit) {
+			SetLastAndWrite(edit) {
 				this._current := this._commands.Last
 				this._tempCommand := edit.Value ; don't trim
-				this.Display(edit, this._current.Value)
+				this.Write(edit, this._current.Value)
 			}
 		}
 		
@@ -645,7 +672,7 @@ class CommandRunner {
 			
 			if (next := this._current.Next) == "" {
 				if not this.IsContentUpdated(edit) {
-					this.Display(edit, this._tempCommand)
+					this.Write(edit, this._tempCommand)
 				}
 				this.Reset()
 				return
@@ -656,7 +683,7 @@ class CommandRunner {
 				return
 			}
 			
-			this.Display(edit, next.Value)
+			this.Write(edit, next.Value)
 			this._current := next
 		}
 		
@@ -679,13 +706,13 @@ class CommandRunner {
 		}
 		
 		static Reset() {
-			this._current := ""
-			this._tempCommand := ""
+			this._current := this._tempCommand := ""
 		}
 		
 		static ClearHistory() {
 			this._commandsMap.Clear()
 			this._commands.Clear()
+			FileOpen(this._historyPath, "w").Close() ; open truncated and close
 		}
 		
 		static IsContentUpdated(edit) => this._current.Value != Trim(edit.Value)
@@ -693,7 +720,7 @@ class CommandRunner {
 		/**
 		 * @param {Gui.Edit} edit
 		 */
-		static Display(edit, value) {
+		static Write(edit, value) {
 			edit.Value := value
 			PostMessage(0x1511, StrLen(value), 0, edit.Hwnd) ; EM_SETCARETINDEX
 		}
