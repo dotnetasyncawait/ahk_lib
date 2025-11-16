@@ -31,16 +31,16 @@
  * F3::icon.Show()
  * F4::ToolTip("Icon is toggled " (icon.ToggleVisibility() ? "on." : "off."))
  * 
- * LClickCallback(iconIndex, iconId) {
- *   ToolTip(Format("Left-click on icon: {} (TrayIcon: {})", iconIndex, iconId))
+ * LClickCallback(iconIndex, instance) {
+ *   ToolTip(Format("Left-click on icon: {} (TrayIcon: {})", iconIndex, instance.Id))
  * }
  * 
- * RClickCallback(iconIndex, iconId) {
- *   ToolTip(Format("Right-click on icon: {} (TrayIcon: {})", iconIndex, iconId))
+ * RClickCallback(iconIndex, instance) {
+ *   ToolTip(Format("Right-click on icon: {} (TrayIcon: {})", iconIndex, instance.Id))
  * }
  * 
- * DClickCallback(iconIndex, iconId) {
- *   ToolTip(Format("Double-click on icon: {} (TrayIcon: {})", iconIndex, iconId))
+ * DClickCallback(iconIndex, instance) {
+ *   ToolTip(Format("Double-click on icon: {} (TrayIcon: {})", iconIndex, instance.Id))
  * }
  * ```
  */
@@ -59,6 +59,7 @@ class TrayIcon {
 	_OnDClick := ""
 	_onMessageInitialized := false
 	
+	Id => this._id
 	Count => this._icons.Length
 	IsVisible => this._visible
 	
@@ -221,33 +222,33 @@ class TrayIcon {
 	
 	/**
 	 * Registers a callback to execute when the tray icon receives a left-click event.
-	 * @param {(Int: iconIndex, Int: iconId) => Integer} callback 
+	 * @param {(Int: iconIndex, TrayIcon: icon) => Integer} callback 
 	 * @returns {TrayIcon}
 	 */
 	OnLeftClick(callback) {
-		this._OnLClick := TrayIcon._ValidateCallback(callback, 2, "Int: iconIndex, Int: iconId")
+		this._OnLClick := TrayIcon._ValidateCallback(callback, 2, "Int: iconIndex, TrayIcon: icon")
 		this._InitOnMessage()
 		return this
 	}
 	
 	/**
 	 * Registers a callback to execute when the tray icon receives a right-click event.
-	 * @param {(Int: iconIndex, Int: iconId) => Integer} callback 
+	 * @param {(Int: iconIndex, TrayIcon: icon) => Integer} callback 
 	 * @returns {TrayIcon}
 	 */
 	OnRightClick(callback) {
-		this._OnRClick := TrayIcon._ValidateCallback(callback, 2, "Int: iconIndex, Int: iconId")
+		this._OnRClick := TrayIcon._ValidateCallback(callback, 2, "Int: iconIndex, TrayIcon: icon")
 		this._InitOnMessage()
 		return this
 	}
 	
 	/**
 	 * Registers a callback to execute when the tray icon receives a left-double-click event.
-	 * @param {(Int: iconIndex, Int: iconId) => Integer} callback 
+	 * @param {(Int: iconIndex, TrayIcon: icon) => Integer} callback 
 	 * @returns {TrayIcon} 
 	 */
 	OnDoubleClick(callback) {
-		this._OnDClick := TrayIcon._ValidateCallback(callback, 2, "Int: iconIndex, Int: iconId")
+		this._OnDClick := TrayIcon._ValidateCallback(callback, 2, "Int: iconIndex, TrayIcon: icon")
 		this._InitOnMessage()
 		return this
 	}
@@ -291,7 +292,7 @@ class TrayIcon {
 		}
 		
 		if fn {
-			return fn(this._iconIndex, this._id)
+			return fn(this._iconIndex, this)
 		}
 	}
 	
