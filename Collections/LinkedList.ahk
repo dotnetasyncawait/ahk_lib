@@ -11,6 +11,8 @@ class LinkedList {
 	
 	_size := 0
 	
+	__Enum(_) => LinkedList.Enumerator(this)
+	
 	First => this._head
 	Last  => this._tail
 	Size  => this._size
@@ -123,6 +125,36 @@ class LinkedList {
 		
 		this._head := this._tail := ""
 		this._size := 0
+	}
+	
+	class Enumerator {
+		/**
+		 * @type {LinkedList}
+		 */
+		_list := unset
+		
+		/**
+		 * @type {LinkedListNode}
+		 */
+		_node := -1
+		
+		__New(list) => this._list := list
+		
+		Call(&value) {
+			if this._node == -1 {
+				; TODO: store version (once implement)
+				this._node := this._list.First
+			}
+			
+			if not current := this._node {
+				value := ""
+				return false
+			}
+			
+			value := current.Value
+			this._node := current.Next
+			return true
+		}
 	}
 }
 
