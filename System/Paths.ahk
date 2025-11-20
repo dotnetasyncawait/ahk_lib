@@ -7,8 +7,9 @@ class Paths {
 	static Radeon    := "D:\Radeon ReLive\unknown"
 	static ScriptDir := A_ScriptDir
 	
-	static ProgramFiles := A_ProgramFiles
-	static Documents    := A_MyDocuments
+	static ProgramFiles    := A_ProgramFiles
+	static ProgramFilesX86 := EnvGet("ProgramFiles(x86)")
+	static Documents       := A_MyDocuments
 	
 	static Projects        := "D:\Projects"
 	static ProjectsCSharp  := this.Projects "\CSharp"
@@ -55,6 +56,7 @@ class Paths {
 			"me",          this.User,
 			"code/usr",    this.VsCodeUser,
 			"docs",        this.Documents,
+			".h",          this.ProgramFilesX86 "\Windows Kits\10\Include\10.0.26100.0",
 			
 			"test.ahk",    this._FilePath(this.Desktop "\test.ahk")
 		)

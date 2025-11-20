@@ -39,20 +39,20 @@ DragWindow(keyToHold) {
 	SetWinDelay(-1)
 	
 	WinActivate(winHWND)
-	WinGetPos(&prevWinX, &prevWinY,,, winHWND)
+	WinGetPos(&winX, &winY, &w, &h, winHWND)
 	
 	loop {
 		MouseGetPos(&mouseX, &mouseY)
-		newWinX := prevWinX + mouseX - prevMouseX
-		newWinY := prevWinY + mouseY - prevMouseY
 		
-		WinMove(newWinX, newWinY, , , winHWND)
+		winX += mouseX - prevMouseX
+		winY += mouseY - prevMouseY
+		
+		if not DllCall("MoveWindow", "Ptr", winHWND, "Int", winX, "Int", winY, "Int", w, "Int", h, "Int", true) {
+			throw OSError()
+		}
 		
 		prevMouseX := mouseX
 		prevMouseY := mouseY
-		
-		prevWinX := newWinX
-		prevWinY := newWinY
 		
 		if !GetKeyState(keyToHold, "P") {
 			break
