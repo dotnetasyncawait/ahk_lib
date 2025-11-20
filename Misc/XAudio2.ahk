@@ -9,8 +9,8 @@ class XAudio2 {
 	static __New() {
 		this._ThrowIf(DllCall("XAudio2_9\XAudio2Create", "Ptr*", &IXAudio2:=0, "UInt", 0, "UInt", 1)) ; XAUDIO2_DEFAULT_PROCESSOR
 		
-		this._ThrowIf(ComCall(7, IXAudio2, ; IXAudio2::CreateMasteringVoice; (6 == AudioCategory_GameEffects, audiosessiontypes.h)
-			"Ptr*", &_:=0, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr", 0, "Ptr", 0, "Ptr", 6))
+		this._ThrowIf(ComCall(7, IXAudio2, ; IXAudio2::CreateMasteringVoice; (AudioCategory_Media = 11, audiosessiontypes.h)
+			"Ptr*", &_:=0, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr", 0, "Ptr", 0, "Ptr", 11))
 		
 		this._ixAudio2 := IXAudio2
 		this._chunks.Default := ""
@@ -70,24 +70,33 @@ class XAudio2 {
 	
 	static _ParseChunks(path) {
 		buff := FileRead(path, "RAW")
+		
+		; https://learn.microsoft.com/en-us/windows/win32/xaudio2/resource-interchange-file-format--riff-
+		; RIFF + fSize + fType + ("fmt " + chSize + <data(16)> + "data" + chSize + <data(al_least_1_byte+padd)>).
+		if buff.Size < 46 { 
+			throw InvalidFileType()
+		}
+		
+		if "RIFF" != StrGet(buff, 4, "CP0")
+			|| buff.Size != NumGet(buff, 4, "UInt") + 8 ; fSize + (RIFF + fSize)
+			|| "WAVE" != StrGet(buff.Ptr + 8, 4, "CP0") ; fType
+		{
+			throw InvalidFileType()
+		}
+		
 		chunk := this.ChunkTable(buff)
-		offset := 0
+		offset := 12
 		
-		; RIFF fileSize fileType ("fmt " chunkSize <data> "data" chunkSize <data>)
-		
-		while offset < buff.Size {
-			type := StrGet(buff.Ptr+offset, 4, "CP0")
-			size := NumGet(buff, offset+4, "UInt")
+		while offset + 8 <= buff.Size {
+			type := StrGet(buff.Ptr + offset, 4, "CP0")
+			size := NumGet(buff, offset + 4, "UInt")
 			offset += 8
 			
+			if offset + size > buff.Size {
+				throw InvalidFileType()
+			}
+			
 			switch type {
-			case "RIFF":
-				fileType := StrGet(buff.Ptr+offset, 4, "CP0")
-				if fileType != "WAVE" {
-					throw Error(Format("Unsupported file type '{}'.", fileType))
-				}
-				offset += 4
-				continue
 			case "fmt ": chunk._fmt  := this.Chunk(offset, size)
 			case "data": chunk._data := this.Chunk(offset, size)
 			}
@@ -95,11 +104,13 @@ class XAudio2 {
 			offset += size
 		}
 		
-		; Dummy validation to verify that all 3 chunks are present and processed.
-		; It will throw if any of these members aren't yet set.
-		_ := StrLen(fileType) + chunk._fmt.Offset + chunk._data.Offset
+		if not (HasProp(chunk, "_fmt") && HasProp(chunk, "_data")) {
+			throw InvalidFileType()
+		}
 		
 		return chunk
+		
+		InvalidFileType() => ValueError("File type is not supported.")
 	}
 	
 	static _ThrowIf(errorCode) {
