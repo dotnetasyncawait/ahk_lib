@@ -57,7 +57,7 @@ class TrayIcon {
 	_OnLClick := ""
 	_OnRClick := ""
 	_OnDClick := ""
-	_onMessageInitialized := false
+	_msgHandler := ""
 	
 	Id => this._id
 	Count => this._icons.Length
@@ -94,6 +94,10 @@ class TrayIcon {
 			for icon in icons {
 				_ := DllCall("DestroyIcon", "Ptr", icon.HIcon)
 			}
+		}
+		
+		if this._msgHandler {
+			OnMessage(this._msg, this._msgHandler, 0)
 		}
 	}
 	
@@ -261,11 +265,9 @@ class TrayIcon {
 	}
 	
 	_InitOnMessage() {
-		if this._onMessageInitialized {
-			return
+		if not this._msgHandler {
+			OnMessage(this._msg, this._msgHandler := this._MessageHandler.Bind(this))
 		}
-		OnMessage(this._msg, this._MessageHandler.Bind(this))
-		this._onMessageInitialized := true
 	}
 	
 	_MessageHandler(wParam, lParam, _, hwnd) {

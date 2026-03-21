@@ -6,6 +6,10 @@ class Chrome {
 	static ProcessName => this._processName
 	static IsActive => WinActive(this._winProcessName)
 	
+	static IsYoutube(title) {
+		len := StrLen(title)
+		return len >= 25 && SubStr(title, len-24) == "- YouTube - Google Chrome"
+	}
 	
 	; --- Shortcuts ---
 	
@@ -17,17 +21,43 @@ class Chrome {
 	
 	static ReloadTab() => SendInput("^r")
 	
+	static ReloadTabIgnoringCache() => SendEvent("^+r")
+	
 	static NextTab() => SendInput("^{PgDn}")
 	
 	static PreviousTab() => SendInput("^{PgUp}")
-	
-	static MoveTabLeft() => SendInput("^+{PgUp}")
-	
-	static MoveTabRight() => SendInput("^+{PgDn}")
 	
 	static Forward() => SendInput("!{Right}")
 	
 	static Back() => SendInput("!{Left}")
 	
 	static FocusOnAddressBar() => SendInput("^l")
+	
+	static OpenHomePage() => SendEvent("!{Home}")
+	
+	static JumpToRightmostTab() => SendEvent("^9")
+	
+	static Tabs() => SendEvent("^+a")
+	
+	static RecentTab() {
+		SendEvent("^+a")
+		Sleep(100)
+		SendEvent("{Enter}")
+	}
+	
+	static ToggleLoopMode() {
+		; modified
+		; default: none
+		; extension: Enhancer for YouTube™
+		
+		; SendEvent("{LAlt Down}l{LCtrl Down}{LAlt Up}{LCtrl Up}")
+		SendEvent("!l")
+	}
+	
+	static IncreasePlaybackSpeed() => SendEvent("!4")
+	
+	static DecreasePlaybackSpeed() => SendEvent("!5")
+	
+	static DefaultPlaybackSpeed() => SendEvent("!6")
+	
 }
