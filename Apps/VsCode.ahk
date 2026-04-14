@@ -48,6 +48,16 @@ class VsCode {
 				this.Open(path)
 				output.WriteSilent(Format('Opening folder "{}".', path))
 			}
+		case "-p":
+			if not args.Next(&path) {
+				output.WriteError("path must be specified. Example: code -p <here>")
+				return
+			}
+			if FileExist(path := path.Value) {
+				this.Open(path)
+			} else {
+				output.WriteError(Format("path '{}' not found", path))
+			}
 		default:
 			if not Paths.TryGetAliased(value, &path, &isFile) {
 				output.WriteError(Format("alias '{}' not found.", value))

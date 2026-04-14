@@ -420,7 +420,7 @@ class CommandRunner {
 	
 	static _InitCommands() {
 		this._commands.CaseSense := false
-		this._commands.Set("this", this._HandleCommand.Bind(this))
+		this._commands.Set("clear", this._HandleClearCommand.Bind(this))
 		this._commands.Default := ""
 	}
 	
@@ -428,39 +428,37 @@ class CommandRunner {
 	 * @param {CommandRunner.ArgsIter} args
 	 * @param {CommandRunner.Output} output
 	 */
-	static _HandleCommand(args, _, output) {
-		if not args.Next(&arg) || arg.Value == "-h" {
-			output.Write(GetUsage())
+	static _HandleClearCommand(args, _, output) {
+		if not args.Next(&arg) {
+			output._Clear()
 			return
 		}
 		
-		switch command := arg.Value {
+		switch value := arg.Value {
+		case "all":
+			this.History.ClearHistory()
+			output._Clear()
 		case "ch":
 			this.History.ClearHistory()
 			output.WriteSilent("Command history is cleared.")
-		
-		case "ca": 
-			this.History.ClearHistory()
-			output._Clear()
-		
-		case "clear": output._Clear()
-		
-		default: output.WriteUnknownCommand(command, GetUsage())
+		case "-h":
+			output.Write(GetUsage())
+		default:
+			output.WriteUnknownCommand(value, GetUsage())
 		}
 		
 		return
 		
 		GetUsage() => "
 		(
-			Usage: this [OPTIONS] COMMAND
+			Usage: clear [OPTIONS] [COMMAND]
 			
 			Options:
-			 -h:  Get usage
+			 -h:  Print usage
 			
 			Commands:
-			 ch:     Clear command history
-			 clear:  Clear output
-			 ca:     Clear command history and output
+			 ch:   Clear command history
+			 all:  Clear command history and output
 		)"
 	}
 	

@@ -26,15 +26,26 @@ class Explorer {
 			return
 		}
 		
-		alias := arg.Value
-		
-		if not Paths.TryGetAliased(alias, &path, &isFile) {
-			output.WriteError(Format("alias '{}' not found.", alias))
-		} else if isFile {
-			output.WriteError("files are not supported.")
-		} else {
-			this.Open(path)
-			output.WriteSilent(Format('Opening folder "{}".', path))
+		switch value := arg.Value {
+		case "-p":
+			if not args.Next(&arg) {
+				output.WriteError("path must be specified. Example: exp -p <here>")
+				return
+			}
+			if DirExist(path := arg.Value) {
+				this.Open(path)
+			} else {
+				output.WriteError(Format("directory '{}' not found", path))
+			}
+		default:
+			if not Paths.TryGetAliased(value, &path, &isFile) {
+				output.WriteError(Format("alias '{}' not found.", value))
+			} else if isFile {
+				output.WriteError("files are not supported.")
+			} else {
+				this.Open(path)
+				output.WriteSilent(Format('Opening folder "{}".', path))
+			}
 		}
 	}
 	
