@@ -207,16 +207,14 @@ class Audio {
 			return ""
 		}
 		
-		this._ThrowHR(iMMDevice.OpenPropertyStore(&iPropertyStore))
-		this._ThrowHR(iPropertyStore.GetValue_PKEY_Device_FriendlyName(&friendlyName))
-		this._ThrowHR(iMMDevice.QueryInterface_IMMEndpoint(&iMMEndpoint))
 		this._ThrowHR(iMMDevice.GetState(&dState))
 		
 		if dType == DeviceType.All {
+			this._ThrowHR(iMMDevice.QueryInterface_IMMEndpoint(&iMMEndpoint))
 			this._ThrowHR(iMMEndpoint.GetDataFlow(&dType))
 		}
 		
-		return Audio.Device(friendlyName, dType, dState, iMMDevice)
+		return Audio.Device(deviceName, dType, dState, iMMDevice)
 	}
 	
 	/**
@@ -254,13 +252,16 @@ class Audio {
 			
 			this._ThrowHR(iMMDevice.OpenPropertyStore(&iPropertyStore))
 			this._ThrowHR(iPropertyStore.GetValue_PKEY_Device_FriendlyName(&friendlyName))
-			
 			this._ThrowHR(iMMDevice.GetState(&dState))
 			
-			this._ThrowHR(iMMDevice.QueryInterface_IMMEndpoint(&iMMEndpoint))
-			this._ThrowHR(iMMEndpoint.GetDataFlow(&dType))
+			if dType == DeviceType.All {
+				this._ThrowHR(iMMDevice.QueryInterface_IMMEndpoint(&iMMEndpoint))
+				this._ThrowHR(iMMEndpoint.GetDataFlow(&type))
+			} else {
+				type := dType
+			}
 			
-			list.Push(Audio.Device(friendlyName, dType, dState, iMMDevice))
+			list.Push(Audio.Device(friendlyName, type, dState, iMMDevice))
 		}
 		
 		return list
