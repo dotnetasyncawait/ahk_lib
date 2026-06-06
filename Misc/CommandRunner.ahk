@@ -473,13 +473,13 @@ class CommandRunner {
 		
 		console.SetFont("s18 c0xbdbdbd", "JetBrains Mono Regular")
 		
-		editOpts := Format("Background171717 -E0x200 Center Border w{} h{}", this._width, this._height)
+		editOpts := Format("Background1E1E1E -E0x200 Center Border w{} h{}", this._width, this._height)
 		this._consoleEdit := console.AddEdit(editOpts)
 		
 		console.SetFont("s14") ; Output edit will inherit this size and use it to adjust its row count.
 		
 		editOpts := Format(
-			"Background171717 -E0x200 y+{} wP R{} -VScroll ReadOnly Hidden Border",
+			"Background1E1E1E -E0x200 y+{} wP R{} -VScroll ReadOnly Hidden Border",
 			this._outputEditPaddY, this._outputRowCount)
 		
 		this._output := CommandRunner.Output(console.AddEdit(editOpts))

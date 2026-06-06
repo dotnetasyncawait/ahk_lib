@@ -19,7 +19,7 @@ class WindowsTerminal {
 	 * @param {CommandRunner.Output} output
 	 */
 	static _HandleCommand(args, hwnd, output) {
-		; Usage: wt [. | ALIAS] [-e]
+		; Usage: wt [{{. | ALIAS} | {-p PATH}}] [-e]
 		
 		if args.IsEmpty {
 			Run(this._fullProcessName)
@@ -37,7 +37,17 @@ class WindowsTerminal {
 					return
 				}
 				prefix := "*RunAs "
-				break ; break of the while loop
+				break ; breaks out of the while loop
+			case "-p":
+				if path {
+					output.WriteError("invalid argument '-p'.")
+				} else if not args.Next(&arg) {
+					output.WriteError("path is expected; Example: wt -p <here>")
+				} else {
+					path := arg.Value
+					continue
+				}
+				return
 			case ".":
 				if path {
 					output.WriteError("invalid argument '.'.")
